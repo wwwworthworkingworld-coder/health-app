@@ -221,7 +221,12 @@
   var sleepHoursInput = document.getElementById("sleepHoursInput");
   var sleepQualityInput = document.getElementById("sleepQualityInput");
   var memoInput = document.getElementById("memoInput");
-  var mealList = document.getElementById("mealList");
+  var MEAL_TYPES = ["breakfast", "lunch", "dinner"];
+  var mealListEls = {
+    breakfast: document.getElementById("mealList-breakfast"),
+    lunch: document.getElementById("mealList-lunch"),
+    dinner: document.getElementById("mealList-dinner")
+  };
   var exerciseList = document.getElementById("exerciseList");
   var conditionPicker = document.getElementById("conditionPicker");
   var selectedCondition = null;
@@ -249,7 +254,17 @@
     return document.getElementById("exerciseRowTemplate").content.cloneNode(true);
   }
 
-  function addMealRow(name, grams, kcal) {
+  function updateMealSubtotal(listEl) {
+    var subtotalEl = document.getElementById("mealSubtotal-" + listEl.dataset.mealType);
+    var rows = listEl.querySelectorAll(".entry-row");
+    if (rows.length === 0) { subtotalEl.textContent = ""; return; }
+    var total = Array.from(rows).reduce(function (sum, row) {
+      return sum + (Number(row.querySelector(".entry-num").value) || 0);
+    }, 0);
+    subtotalEl.innerHTML = "小計：<b>" + total + "kcal</b>";
+  }
+
+  function addMealRow(listEl, name, grams, kcal) {
     var frag = mealRowTemplate();
     var wrapperEl = frag.querySelector(".meal-entry");
     var row = frag.querySelector(".entry-row");
@@ -323,6 +338,7 @@
           gramsInput.value = FOOD_DB[n].serving;
           renderSuggestions();
           recalc();
+          updateMealSubtotal(listEl);
           gramsInput.focus();
           gramsInput.select();
         });
@@ -335,21 +351,30 @@
       row.dataset.manualKcal = "false";
       renderSuggestions();
       recalc();
+      updateMealSubtotal(listEl);
     });
     nameInput.addEventListener("focus", renderSuggestions);
     nameInput.addEventListener("blur", function () {
       setTimeout(function () { suggestList.style.display = "none"; }, 150);
     });
 
-    gramsInput.addEventListener("input", recalc);
-    kcalInput.addEventListener("input", function () { row.dataset.manualKcal = "true"; });
+    gramsInput.addEventListener("input", function () {
+      recalc();
+      updateMealSubtotal(listEl);
+    });
+    kcalInput.addEventListener("input", function () {
+      row.dataset.manualKcal = "true";
+      updateMealSubtotal(listEl);
+    });
 
     row.querySelector(".entry-remove").addEventListener("click", function () {
       wrapperEl.remove();
+      updateMealSubtotal(listEl);
     });
 
     updateHint();
-    mealList.appendChild(frag);
+    listEl.appendChild(frag);
+    updateMealSubtotal(listEl);
   }
 
   function addExerciseRow(name, minutes, kcal) {
@@ -364,7 +389,9 @@
     exerciseList.appendChild(row);
   }
 
-  document.getElementById("addMealBtn").addEventListener("click", function () { addMealRow(); });
+  document.querySelectorAll(".btn-small[data-meal-type]").forEach(function (btn) {
+    btn.addEventListener("click", function () { addMealRow(mealListEls[btn.getAttribute("data-meal-type")]); });
+  });
   document.getElementById("addExerciseBtn").addEventListener("click", function () { addExerciseRow(); });
 
   function clearForm() {
@@ -373,10 +400,19 @@
     sleepHoursInput.value = "";
     sleepQualityInput.value = "";
     memoInput.value = "";
-    mealList.innerHTML = "";
+    MEAL_TYPES.forEach(function (t) {
+      mealListEls[t].innerHTML = "";
+      document.getElementById("mealSubtotal-" + t).textContent = "";
+    });
     exerciseList.innerHTML = "";
     selectedCondition = null;
     Array.from(conditionPicker.children).forEach(function (b) { b.classList.remove("selected"); });
+  }
+
+  function normalizeMeals(meals) {
+    if (Array.isArray(meals)) return { breakfast: meals, lunch: [], dinner: [] };
+    meals = meals || {};
+    return { breakfast: meals.breakfast || [], lunch: meals.lunch || [], dinner: meals.dinner || [] };
   }
 
   function loadEntryIntoForm(dateStr) {
@@ -388,7 +424,10 @@
     sleepHoursInput.value = entry.sleepHours != null ? entry.sleepHours : "";
     sleepQualityInput.value = entry.sleepQuality != null ? entry.sleepQuality : "";
     memoInput.value = entry.memo || "";
-    (entry.meals || []).forEach(function (m) { addMealRow(m.name, m.grams, m.calories); });
+    var meals = normalizeMeals(entry.meals);
+    MEAL_TYPES.forEach(function (t) {
+      meals[t].forEach(function (m) { addMealRow(mealListEls[t], m.name, m.grams, m.calories); });
+    });
     (entry.exercises || []).forEach(function (ex) { addExerciseRow(ex.name, ex.minutes, ex.calories); });
     if (entry.condition != null) {
       selectedCondition = entry.condition;
@@ -398,8 +437,8 @@
     }
   }
 
-  function collectMeals() {
-    return Array.from(mealList.querySelectorAll(".entry-row")).map(function (row) {
+  function collectMealsFrom(listEl) {
+    return Array.from(listEl.querySelectorAll(".entry-row")).map(function (row) {
       var name = row.querySelector(".entry-name").value.trim();
       var grams = row.querySelector(".entry-num-small").value;
       var cal = row.querySelector(".entry-num").value;
@@ -409,6 +448,12 @@
         calories: cal === "" ? null : Number(cal)
       };
     }).filter(function (m) { return m.name || m.calories != null || m.grams != null; });
+  }
+
+  function collectMeals() {
+    var result = {};
+    MEAL_TYPES.forEach(function (t) { result[t] = collectMealsFrom(mealListEls[t]); });
+    return result;
   }
 
   function collectExercises() {
@@ -458,7 +503,10 @@
   }
 
   function sumCalories(meals) {
-    return (meals || []).reduce(function (sum, m) { return sum + (Number(m.calories) || 0); }, 0);
+    var norm = normalizeMeals(meals);
+    return norm.breakfast.concat(norm.lunch, norm.dinner).reduce(function (sum, m) {
+      return sum + (Number(m.calories) || 0);
+    }, 0);
   }
   function sumExerciseCalories(exercises) {
     return (exercises || []).reduce(function (sum, ex) { return sum + (Number(ex.calories) || 0); }, 0);

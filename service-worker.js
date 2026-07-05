@@ -1,4 +1,4 @@
-var CACHE_NAME = "healthlog-cache-v4";
+var CACHE_NAME = "healthlog-cache-v5";
 var ASSETS = [
   "./",
   "./index.html",

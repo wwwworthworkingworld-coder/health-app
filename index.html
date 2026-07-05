@@ -78,10 +78,29 @@
 
       <div class="card">
         <div class="card-title-row">
-          <h2 class="card-title">食事</h2>
-          <button type="button" class="btn-small" id="addMealBtn">+ 追加</button>
+          <h2 class="card-title">朝食</h2>
+          <button type="button" class="btn-small" data-meal-type="breakfast">+ 追加</button>
         </div>
-        <div id="mealList" class="entry-list"></div>
+        <div id="mealList-breakfast" class="entry-list" data-meal-type="breakfast"></div>
+        <div class="meal-subtotal" id="mealSubtotal-breakfast"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">昼食</h2>
+          <button type="button" class="btn-small" data-meal-type="lunch">+ 追加</button>
+        </div>
+        <div id="mealList-lunch" class="entry-list" data-meal-type="lunch"></div>
+        <div class="meal-subtotal" id="mealSubtotal-lunch"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">夕食</h2>
+          <button type="button" class="btn-small" data-meal-type="dinner">+ 追加</button>
+        </div>
+        <div id="mealList-dinner" class="entry-list" data-meal-type="dinner"></div>
+        <div class="meal-subtotal" id="mealSubtotal-dinner"></div>
       </div>
 
       <div class="card">
