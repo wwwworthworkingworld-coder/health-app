@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#2f8f6e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="健康ログ">
+<title>健康ログ</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <h1 id="pageTitle">今日の記録</h1>
+    <span id="todayDate" class="date-badge"></span>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ 記録タブ ============ -->
+    <section id="tab-record" class="tab active">
+      <div class="card">
+        <label class="field-label">日付</label>
+        <input type="date" id="recordDate" class="input">
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">体重・体組成</h2>
+        <div class="row">
+          <div class="field">
+            <label class="field-label">体重 (kg)</label>
+            <input type="number" step="0.1" inputmode="decimal" id="weightInput" class="input" placeholder="例: 60.5">
+          </div>
+          <div class="field">
+            <label class="field-label">体脂肪率 (%)</label>
+            <input type="number" step="0.1" inputmode="decimal" id="bodyFatInput" class="input" placeholder="例: 20.0">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">睡眠・体調</h2>
+        <div class="row">
+          <div class="field">
+            <label class="field-label">睡眠時間 (h)</label>
+            <input type="number" step="0.1" inputmode="decimal" id="sleepHoursInput" class="input" placeholder="例: 7.5">
+          </div>
+          <div class="field">
+            <label class="field-label">睡眠の質</label>
+            <select id="sleepQualityInput" class="input">
+              <option value="">--</option>
+              <option value="5">とても良い</option>
+              <option value="4">良い</option>
+              <option value="3">普通</option>
+              <option value="2">悪い</option>
+              <option value="1">とても悪い</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">体調</label>
+          <div class="mood-picker" id="conditionPicker">
+            <button type="button" class="mood-btn" data-value="5">😄</button>
+            <button type="button" class="mood-btn" data-value="4">🙂</button>
+            <button type="button" class="mood-btn" data-value="3">😐</button>
+            <button type="button" class="mood-btn" data-value="2">😕</button>
+            <button type="button" class="mood-btn" data-value="1">🤒</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">食事</h2>
+          <button type="button" class="btn-small" id="addMealBtn">+ 追加</button>
+        </div>
+        <div id="mealList" class="entry-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">運動</h2>
+          <button type="button" class="btn-small" id="addExerciseBtn">+ 追加</button>
+        </div>
+        <div id="exerciseList" class="entry-list"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">メモ</h2>
+        <textarea id="memoInput" class="input textarea" placeholder="今日の気づきなど"></textarea>
+      </div>
+
+      <button type="button" id="saveBtn" class="btn-primary">この日の記録を保存</button>
+      <p id="saveStatus" class="save-status"></p>
+    </section>
+
+    <!-- ============ 履歴タブ ============ -->
+    <section id="tab-history" class="tab">
+      <div class="card">
+        <div id="historyList" class="history-list"></div>
+        <p id="historyEmpty" class="empty-msg" style="display:none;">まだ記録がありません</p>
+      </div>
+    </section>
+
+    <!-- ============ グラフタブ ============ -->
+    <section id="tab-graph" class="tab">
+      <div class="card">
+        <label class="field-label">項目</label>
+        <select id="metricSelect" class="input">
+          <option value="weight">体重 (kg)</option>
+          <option value="bodyFat">体脂肪率 (%)</option>
+          <option value="caloriesIn">摂取カロリー (kcal)</option>
+          <option value="caloriesOut">消費カロリー (kcal)</option>
+          <option value="sleepHours">睡眠時間 (h)</option>
+          <option value="condition">体調 (1-5)</option>
+        </select>
+        <label class="field-label" style="margin-top:10px;">期間</label>
+        <select id="rangeSelect" class="input">
+          <option value="14">直近14日</option>
+          <option value="30" selected>直近30日</option>
+          <option value="90">直近90日</option>
+          <option value="0">すべて</option>
+        </select>
+      </div>
+      <div class="card">
+        <canvas id="chartCanvas" width="600" height="320"></canvas>
+        <p id="chartEmpty" class="empty-msg" style="display:none;">データがありません</p>
+        <div id="chartStats" class="chart-stats"></div>
+      </div>
+    </section>
+
+    <!-- ============ 設定タブ ============ -->
+    <section id="tab-settings" class="tab">
+      <div class="card">
+        <h2 class="card-title">目標</h2>
+        <div class="field">
+          <label class="field-label">目標体重 (kg)</label>
+          <input type="number" step="0.1" inputmode="decimal" id="targetWeightInput" class="input" placeholder="例: 58.0">
+        </div>
+        <button type="button" id="saveGoalBtn" class="btn-secondary">目標を保存</button>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">バックアップ</h2>
+        <p class="hint">データはこの端末内だけに保存されています。機種変更やブラウザのデータ削除に備えて、時々バックアップをおすすめします。</p>
+        <button type="button" id="exportBtn" class="btn-secondary">データをエクスポート</button>
+        <label class="btn-secondary file-label">
+          データをインポート
+          <input type="file" id="importFile" accept="application/json" style="display:none;">
+        </label>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">危険な操作</h2>
+        <button type="button" id="clearAllBtn" class="btn-danger">全データを削除</button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <button type="button" class="nav-btn active" data-tab="tab-record">
+      <span class="nav-icon">📝</span><span>記録</span>
+    </button>
+    <button type="button" class="nav-btn" data-tab="tab-history">
+      <span class="nav-icon">📋</span><span>履歴</span>
+    </button>
+    <button type="button" class="nav-btn" data-tab="tab-graph">
+      <span class="nav-icon">📈</span><span>グラフ</span>
+    </button>
+    <button type="button" class="nav-btn" data-tab="tab-settings">
+      <span class="nav-icon">⚙️</span><span>設定</span>
+    </button>
+  </nav>
+
+</div>
+
+<template id="mealRowTemplate">
+  <div class="entry-row" data-kind="meal">
+    <input type="text" class="input entry-name" placeholder="食事内容（例: 白米・鶏胸肉）">
+    <input type="number" class="input entry-num" placeholder="kcal" inputmode="numeric">
+    <button type="button" class="entry-remove">×</button>
+  </div>
+</template>
+
+<template id="exerciseRowTemplate">
+  <div class="entry-row" data-kind="exercise">
+    <input type="text" class="input entry-name" placeholder="運動内容（例: ランニング）">
+    <input type="number" class="input entry-num-small" placeholder="分" inputmode="numeric">
+    <input type="number" class="input entry-num" placeholder="kcal" inputmode="numeric">
+    <button type="button" class="entry-remove">×</button>
+  </div>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>

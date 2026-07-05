@@ -1,0 +1,15 @@
+{
+  "name": "健康ログ",
+  "short_name": "健康ログ",
+  "description": "体重・食事・運動・睡眠・体調を記録する個人用健康管理アプリ",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f5",
+  "theme_color": "#2f8f6e",
+  "lang": "ja",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
