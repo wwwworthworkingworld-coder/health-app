@@ -144,6 +144,8 @@ main {
 
 .entry-list { display: flex; flex-direction: column; gap: 8px; }
 
+.meal-entry { display: flex; flex-direction: column; gap: 3px; }
+
 .entry-row {
   display: flex;
   gap: 6px;
@@ -151,9 +153,47 @@ main {
 }
 
 .entry-row .input { margin-bottom: 0; }
-.entry-name { flex: 3; }
+.entry-name { flex: 3; width: 100%; }
 .entry-num { flex: 1.2; min-width: 0; }
 .entry-num-small { flex: 0.8; min-width: 0; }
+
+.entry-name-wrap { position: relative; flex: 3; min-width: 0; }
+
+.suggest-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 40;
+  display: none;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+.suggest-item {
+  padding: 9px 12px;
+  font-size: 13.5px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid #f0f2f1;
+}
+.suggest-item:last-child { border-bottom: none; }
+.suggest-item:active { background: #f0f2f1; }
+
+.suggest-kcal { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+
+.food-hint {
+  font-size: 11px;
+  color: var(--accent-dark);
+  padding-left: 2px;
+  min-height: 14px;
+  display: none;
+}
 
 .entry-remove {
   border: none;

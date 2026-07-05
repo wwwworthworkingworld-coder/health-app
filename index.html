@@ -183,10 +183,17 @@
 </div>
 
 <template id="mealRowTemplate">
-  <div class="entry-row" data-kind="meal">
-    <input type="text" class="input entry-name" placeholder="食事内容（例: 白米・鶏胸肉）">
-    <input type="number" class="input entry-num" placeholder="kcal" inputmode="numeric">
-    <button type="button" class="entry-remove">×</button>
+  <div class="meal-entry">
+    <div class="entry-row" data-kind="meal">
+      <div class="entry-name-wrap">
+        <input type="text" class="input entry-name" placeholder="食事内容（例: 白米）" autocomplete="off">
+        <div class="suggest-list"></div>
+      </div>
+      <input type="number" class="input entry-num-small" placeholder="g" inputmode="numeric">
+      <input type="number" class="input entry-num" placeholder="kcal" inputmode="numeric">
+      <button type="button" class="entry-remove">×</button>
+    </div>
+    <div class="food-hint"></div>
   </div>
 </template>
 

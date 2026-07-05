@@ -4,6 +4,37 @@
   var STORAGE_KEY = "healthlog_v1";
   var GOAL_KEY = "healthlog_goal_v1";
 
+  // kcal per 100g
+  var FOOD_DB = {
+    "白米": 168, "玄米ご飯": 165, "食パン": 264, "ロールパン": 316,
+    "うどん(ゆで)": 105, "そば(ゆで)": 132, "スパゲッティ(ゆで)": 150,
+    "ラーメン(ゆで麺)": 149, "中華麺(蒸し)": 162, "もち": 235,
+    "オートミール": 380, "コーンフレーク": 381,
+    "鶏むね肉(皮なし)": 116, "鶏むね肉(皮つき)": 145, "鶏もも肉(皮なし)": 127,
+    "鶏もも肉(皮つき)": 200, "鶏ささみ": 105, "鶏ひき肉": 171,
+    "豚バラ肉": 386, "豚ロース肉": 263, "豚ヒレ肉": 118, "豚ひき肉": 209,
+    "牛バラ肉": 371, "牛もも肉": 182, "牛ひき肉": 224,
+    "ベーコン": 400, "ウインナー": 321, "ハム": 118,
+    "鮭": 133, "サバ": 202, "マグロ赤身": 125, "マグロトロ": 344,
+    "アジ": 121, "サンマ": 287, "エビ": 82, "イカ": 76,
+    "ツナ缶(油漬け)": 265, "ツナ缶(水煮)": 71,
+    "卵": 151, "卵白": 47, "卵黄": 336,
+    "牛乳": 67, "ヨーグルト(無糖)": 62, "チーズ": 339,
+    "納豆": 200, "豆腐(絹)": 56, "豆腐(木綿)": 72, "豆乳": 46,
+    "キャベツ": 23, "レタス": 12, "トマト": 20, "きゅうり": 14,
+    "にんじん": 39, "じゃがいも": 76, "さつまいも": 134, "玉ねぎ": 37,
+    "ほうれん草": 20, "ブロッコリー": 33, "なす": 22, "ピーマン": 22,
+    "もやし": 14, "大根": 18,
+    "バナナ": 86, "りんご": 57, "みかん": 49, "ぶどう": 59,
+    "いちご": 34, "キウイ": 51,
+    "サラダ油": 921, "マヨネーズ": 703, "バター": 745,
+    "醤油": 71, "味噌": 192, "砂糖": 384, "ケチャップ": 119,
+    "カレールウ": 511, "インスタントラーメン(乾麺)": 448,
+    "ポテトチップス": 554, "チョコレート": 550, "アイスクリーム": 180,
+    "唐揚げ": 290, "天ぷら(えび)": 233, "オムレツ": 150, "味噌汁": 40
+  };
+  var FOOD_NAMES = Object.keys(FOOD_DB);
+
   // ---------- storage helpers ----------
   function loadAll() {
     try {
@@ -115,15 +146,96 @@
     return document.getElementById("exerciseRowTemplate").content.cloneNode(true);
   }
 
-  function addMealRow(name, kcal) {
+  function addMealRow(name, grams, kcal) {
     var frag = mealRowTemplate();
+    var wrapperEl = frag.querySelector(".meal-entry");
     var row = frag.querySelector(".entry-row");
-    row.querySelector(".entry-name").value = name || "";
-    row.querySelector(".entry-num").value = kcal != null ? kcal : "";
-    row.querySelector(".entry-remove").addEventListener("click", function () {
-      row.remove();
+    var nameInput = row.querySelector(".entry-name");
+    var gramsInput = row.querySelector(".entry-num-small");
+    var kcalInput = row.querySelector(".entry-num");
+    var suggestList = row.querySelector(".suggest-list");
+    var hintEl = wrapperEl.querySelector(".food-hint");
+
+    nameInput.value = name || "";
+    gramsInput.value = grams != null ? grams : "";
+    kcalInput.value = kcal != null ? kcal : "";
+
+    var initialMatch = FOOD_DB[(name || "").trim()];
+    if (initialMatch != null && grams != null && kcal != null) {
+      var initialComputed = Math.round((initialMatch * Number(grams)) / 100);
+      row.dataset.manualKcal = initialComputed === Number(kcal) ? "false" : "true";
+    } else {
+      row.dataset.manualKcal = "true";
+    }
+
+    function updateHint() {
+      var match = FOOD_DB[nameInput.value.trim()];
+      if (match != null) {
+        hintEl.textContent = nameInput.value.trim() + "：" + match + "kcal/100g";
+        hintEl.style.display = "block";
+      } else {
+        hintEl.textContent = "";
+        hintEl.style.display = "none";
+      }
+    }
+
+    function recalc() {
+      updateHint();
+      var match = FOOD_DB[nameInput.value.trim()];
+      if (match == null || row.dataset.manualKcal === "true") return;
+      var g = Number(gramsInput.value);
+      if (gramsInput.value === "" || isNaN(g)) return;
+      kcalInput.value = Math.round((match * g) / 100);
+    }
+
+    function renderSuggestions() {
+      var q = nameInput.value.trim();
+      suggestList.innerHTML = "";
+      if (!q) { suggestList.style.display = "none"; return; }
+      var matches = FOOD_NAMES.filter(function (n) { return n.indexOf(q) !== -1; }).slice(0, 8);
+      if (matches.length === 0) { suggestList.style.display = "none"; return; }
+      matches.forEach(function (n) {
+        var item = document.createElement("div");
+        item.className = "suggest-item";
+        var nameSpan = document.createElement("span");
+        nameSpan.textContent = n;
+        var kcalSpan = document.createElement("span");
+        kcalSpan.className = "suggest-kcal";
+        kcalSpan.textContent = FOOD_DB[n] + "kcal/100g";
+        item.appendChild(nameSpan);
+        item.appendChild(kcalSpan);
+        item.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          nameInput.value = n;
+          row.dataset.manualKcal = "false";
+          renderSuggestions();
+          recalc();
+          gramsInput.focus();
+        });
+        suggestList.appendChild(item);
+      });
+      suggestList.style.display = "block";
+    }
+
+    nameInput.addEventListener("input", function () {
+      row.dataset.manualKcal = "false";
+      renderSuggestions();
+      recalc();
     });
-    mealList.appendChild(row);
+    nameInput.addEventListener("focus", renderSuggestions);
+    nameInput.addEventListener("blur", function () {
+      setTimeout(function () { suggestList.style.display = "none"; }, 150);
+    });
+
+    gramsInput.addEventListener("input", recalc);
+    kcalInput.addEventListener("input", function () { row.dataset.manualKcal = "true"; });
+
+    row.querySelector(".entry-remove").addEventListener("click", function () {
+      wrapperEl.remove();
+    });
+
+    updateHint();
+    mealList.appendChild(frag);
   }
 
   function addExerciseRow(name, minutes, kcal) {
@@ -162,7 +274,7 @@
     sleepHoursInput.value = entry.sleepHours != null ? entry.sleepHours : "";
     sleepQualityInput.value = entry.sleepQuality != null ? entry.sleepQuality : "";
     memoInput.value = entry.memo || "";
-    (entry.meals || []).forEach(function (m) { addMealRow(m.name, m.calories); });
+    (entry.meals || []).forEach(function (m) { addMealRow(m.name, m.grams, m.calories); });
     (entry.exercises || []).forEach(function (ex) { addExerciseRow(ex.name, ex.minutes, ex.calories); });
     if (entry.condition != null) {
       selectedCondition = entry.condition;
@@ -175,9 +287,14 @@
   function collectMeals() {
     return Array.from(mealList.querySelectorAll(".entry-row")).map(function (row) {
       var name = row.querySelector(".entry-name").value.trim();
+      var grams = row.querySelector(".entry-num-small").value;
       var cal = row.querySelector(".entry-num").value;
-      return { name: name, calories: cal === "" ? null : Number(cal) };
-    }).filter(function (m) { return m.name || m.calories != null; });
+      return {
+        name: name,
+        grams: grams === "" ? null : Number(grams),
+        calories: cal === "" ? null : Number(cal)
+      };
+    }).filter(function (m) { return m.name || m.calories != null || m.grams != null; });
   }
 
   function collectExercises() {
