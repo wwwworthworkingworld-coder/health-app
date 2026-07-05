@@ -4,34 +4,92 @@
   var STORAGE_KEY = "healthlog_v1";
   var GOAL_KEY = "healthlog_goal_v1";
 
-  // kcal per 100g
+  // kcal: 100gあたりのカロリー / serving: 一般的な1食分の目安グラム / label: その目安の内容
   var FOOD_DB = {
-    "白米": 168, "玄米ご飯": 165, "食パン": 264, "ロールパン": 316,
-    "うどん(ゆで)": 105, "そば(ゆで)": 132, "スパゲッティ(ゆで)": 150,
-    "ラーメン(ゆで麺)": 149, "中華麺(蒸し)": 162, "もち": 235,
-    "オートミール": 380, "コーンフレーク": 381,
-    "鶏むね肉(皮なし)": 116, "鶏むね肉(皮つき)": 145, "鶏もも肉(皮なし)": 127,
-    "鶏もも肉(皮つき)": 200, "鶏ささみ": 105, "鶏ひき肉": 171,
-    "豚バラ肉": 386, "豚ロース肉": 263, "豚ヒレ肉": 118, "豚ひき肉": 209,
-    "牛バラ肉": 371, "牛もも肉": 182, "牛ひき肉": 224,
-    "ベーコン": 400, "ウインナー": 321, "ハム": 118,
-    "鮭": 133, "サバ": 202, "マグロ赤身": 125, "マグロトロ": 344,
-    "アジ": 121, "サンマ": 287, "エビ": 82, "イカ": 76,
-    "ツナ缶(油漬け)": 265, "ツナ缶(水煮)": 71,
-    "卵": 151, "卵白": 47, "卵黄": 336,
-    "牛乳": 67, "ヨーグルト(無糖)": 62, "チーズ": 339,
-    "納豆": 200, "豆腐(絹)": 56, "豆腐(木綿)": 72, "豆乳": 46,
-    "キャベツ": 23, "レタス": 12, "トマト": 20, "きゅうり": 14,
-    "にんじん": 39, "じゃがいも": 76, "さつまいも": 134, "玉ねぎ": 37,
-    "ほうれん草": 20, "ブロッコリー": 33, "なす": 22, "ピーマン": 22,
-    "もやし": 14, "大根": 18,
-    "バナナ": 86, "りんご": 57, "みかん": 49, "ぶどう": 59,
-    "いちご": 34, "キウイ": 51,
-    "サラダ油": 921, "マヨネーズ": 703, "バター": 745,
-    "醤油": 71, "味噌": 192, "砂糖": 384, "ケチャップ": 119,
-    "カレールウ": 511, "インスタントラーメン(乾麺)": 448,
-    "ポテトチップス": 554, "チョコレート": 550, "アイスクリーム": 180,
-    "唐揚げ": 290, "天ぷら(えび)": 233, "オムレツ": 150, "味噌汁": 40
+    "白米": { kcal: 168, serving: 150, label: "茶碗1杯" },
+    "玄米ご飯": { kcal: 165, serving: 150, label: "茶碗1杯" },
+    "食パン": { kcal: 264, serving: 60, label: "6枚切り1枚" },
+    "ロールパン": { kcal: 316, serving: 30, label: "1個" },
+    "うどん(ゆで)": { kcal: 105, serving: 250, label: "1玉" },
+    "そば(ゆで)": { kcal: 132, serving: 170, label: "1人前" },
+    "スパゲッティ(ゆで)": { kcal: 150, serving: 240, label: "1人前" },
+    "ラーメン(ゆで麺)": { kcal: 149, serving: 230, label: "1玉" },
+    "中華麺(蒸し)": { kcal: 162, serving: 150, label: "1玉" },
+    "もち": { kcal: 235, serving: 50, label: "1個" },
+    "オートミール": { kcal: 380, serving: 30, label: "1食分(乾)" },
+    "コーンフレーク": { kcal: 381, serving: 40, label: "1食分" },
+    "鶏むね肉(皮なし)": { kcal: 116, serving: 100, label: "1食分" },
+    "鶏むね肉(皮つき)": { kcal: 145, serving: 100, label: "1食分" },
+    "鶏もも肉(皮なし)": { kcal: 127, serving: 100, label: "1食分" },
+    "鶏もも肉(皮つき)": { kcal: 200, serving: 100, label: "1食分" },
+    "鶏ささみ": { kcal: 105, serving: 50, label: "1本" },
+    "鶏ひき肉": { kcal: 171, serving: 100, label: "1食分" },
+    "豚バラ肉": { kcal: 386, serving: 100, label: "1食分" },
+    "豚ロース肉": { kcal: 263, serving: 100, label: "1食分" },
+    "豚ヒレ肉": { kcal: 118, serving: 100, label: "1食分" },
+    "豚ひき肉": { kcal: 209, serving: 100, label: "1食分" },
+    "牛バラ肉": { kcal: 371, serving: 100, label: "1食分" },
+    "牛もも肉": { kcal: 182, serving: 100, label: "1食分" },
+    "牛ひき肉": { kcal: 224, serving: 100, label: "1食分" },
+    "ベーコン": { kcal: 400, serving: 20, label: "1枚" },
+    "ウインナー": { kcal: 321, serving: 20, label: "1本" },
+    "ハム": { kcal: 118, serving: 20, label: "1枚" },
+    "鮭": { kcal: 133, serving: 80, label: "1切れ" },
+    "サバ": { kcal: 202, serving: 80, label: "1切れ" },
+    "マグロ赤身": { kcal: 125, serving: 80, label: "刺身5切れ" },
+    "マグロトロ": { kcal: 344, serving: 80, label: "刺身5切れ" },
+    "アジ": { kcal: 121, serving: 100, label: "1尾(可食部)" },
+    "サンマ": { kcal: 287, serving: 100, label: "1尾(可食部)" },
+    "エビ": { kcal: 82, serving: 15, label: "1尾" },
+    "イカ": { kcal: 76, serving: 100, label: "1杯(可食部)" },
+    "ツナ缶(油漬け)": { kcal: 265, serving: 70, label: "1缶" },
+    "ツナ缶(水煮)": { kcal: 71, serving: 70, label: "1缶" },
+    "卵": { kcal: 151, serving: 50, label: "1個" },
+    "卵白": { kcal: 47, serving: 33, label: "1個分" },
+    "卵黄": { kcal: 336, serving: 17, label: "1個分" },
+    "牛乳": { kcal: 67, serving: 200, label: "コップ1杯" },
+    "ヨーグルト(無糖)": { kcal: 62, serving: 100, label: "1個" },
+    "チーズ": { kcal: 339, serving: 18, label: "スライス1枚" },
+    "納豆": { kcal: 200, serving: 45, label: "1パック" },
+    "豆腐(絹)": { kcal: 56, serving: 150, label: "1/2丁" },
+    "豆腐(木綿)": { kcal: 72, serving: 150, label: "1/2丁" },
+    "豆乳": { kcal: 46, serving: 200, label: "コップ1杯" },
+    "キャベツ": { kcal: 23, serving: 50, label: "付け合わせ1皿" },
+    "レタス": { kcal: 12, serving: 30, label: "葉2〜3枚" },
+    "トマト": { kcal: 20, serving: 150, label: "1個" },
+    "きゅうり": { kcal: 14, serving: 100, label: "1本" },
+    "にんじん": { kcal: 39, serving: 50, label: "1/3本" },
+    "じゃがいも": { kcal: 76, serving: 100, label: "1個" },
+    "さつまいも": { kcal: 134, serving: 150, label: "1本" },
+    "玉ねぎ": { kcal: 37, serving: 100, label: "中1/2個" },
+    "ほうれん草": { kcal: 20, serving: 80, label: "1束の半分" },
+    "ブロッコリー": { kcal: 33, serving: 80, label: "1/4株" },
+    "なす": { kcal: 22, serving: 80, label: "1本" },
+    "ピーマン": { kcal: 22, serving: 30, label: "1個" },
+    "もやし": { kcal: 14, serving: 50, label: "1/4袋" },
+    "大根": { kcal: 18, serving: 100, label: "輪切り2切れ" },
+    "バナナ": { kcal: 86, serving: 100, label: "1本" },
+    "りんご": { kcal: 57, serving: 250, label: "1個" },
+    "みかん": { kcal: 49, serving: 100, label: "1個" },
+    "ぶどう": { kcal: 59, serving: 100, label: "1房の一部" },
+    "いちご": { kcal: 34, serving: 75, label: "5粒" },
+    "キウイ": { kcal: 51, serving: 100, label: "1個" },
+    "サラダ油": { kcal: 921, serving: 10, label: "大さじ1弱" },
+    "マヨネーズ": { kcal: 703, serving: 12, label: "大さじ1" },
+    "バター": { kcal: 745, serving: 10, label: "大さじ1弱" },
+    "醤油": { kcal: 71, serving: 15, label: "大さじ1" },
+    "味噌": { kcal: 192, serving: 18, label: "大さじ1" },
+    "砂糖": { kcal: 384, serving: 9, label: "大さじ1" },
+    "ケチャップ": { kcal: 119, serving: 15, label: "大さじ1" },
+    "カレールウ": { kcal: 511, serving: 20, label: "1皿分" },
+    "インスタントラーメン(乾麺)": { kcal: 448, serving: 85, label: "1食" },
+    "ポテトチップス": { kcal: 554, serving: 60, label: "小袋1袋" },
+    "チョコレート": { kcal: 550, serving: 50, label: "1/2枚" },
+    "アイスクリーム": { kcal: 180, serving: 100, label: "カップ1個" },
+    "唐揚げ": { kcal: 290, serving: 100, label: "3〜4個" },
+    "天ぷら(えび)": { kcal: 233, serving: 60, label: "2尾" },
+    "オムレツ": { kcal: 150, serving: 120, label: "卵2個分" },
+    "味噌汁": { kcal: 40, serving: 180, label: "お椀1杯" }
   };
   var FOOD_NAMES = Object.keys(FOOD_DB);
 
@@ -162,7 +220,7 @@
 
     var initialMatch = FOOD_DB[(name || "").trim()];
     if (initialMatch != null && grams != null && kcal != null) {
-      var initialComputed = Math.round((initialMatch * Number(grams)) / 100);
+      var initialComputed = Math.round((initialMatch.kcal * Number(grams)) / 100);
       row.dataset.manualKcal = initialComputed === Number(kcal) ? "false" : "true";
     } else {
       row.dataset.manualKcal = "true";
@@ -170,22 +228,30 @@
 
     function updateHint() {
       var match = FOOD_DB[nameInput.value.trim()];
-      if (match != null) {
-        hintEl.textContent = nameInput.value.trim() + "：" + match + "kcal/100g";
-        hintEl.style.display = "block";
-      } else {
+      if (match == null) {
         hintEl.textContent = "";
         hintEl.style.display = "none";
+        return;
       }
+      var g = Number(gramsInput.value);
+      if (gramsInput.value !== "" && !isNaN(g)) {
+        hintEl.textContent = nameInput.value.trim() + "：" + g + "gで" + Math.round((match.kcal * g) / 100) + "kcal（100gあたり" + match.kcal + "kcal）";
+      } else {
+        hintEl.textContent = nameInput.value.trim() + "：100gあたり" + match.kcal + "kcal（目安 " + match.label + " " + match.serving + "g）";
+      }
+      hintEl.style.display = "block";
     }
 
     function recalc() {
-      updateHint();
       var match = FOOD_DB[nameInput.value.trim()];
+      if (match != null && gramsInput.value === "") {
+        gramsInput.value = match.serving;
+      }
+      updateHint();
       if (match == null || row.dataset.manualKcal === "true") return;
       var g = Number(gramsInput.value);
       if (gramsInput.value === "" || isNaN(g)) return;
-      kcalInput.value = Math.round((match * g) / 100);
+      kcalInput.value = Math.round((match.kcal * g) / 100);
     }
 
     function renderSuggestions() {
@@ -198,19 +264,22 @@
         var item = document.createElement("div");
         item.className = "suggest-item";
         var nameSpan = document.createElement("span");
+        nameSpan.className = "suggest-name";
         nameSpan.textContent = n;
         var kcalSpan = document.createElement("span");
         kcalSpan.className = "suggest-kcal";
-        kcalSpan.textContent = FOOD_DB[n] + "kcal/100g";
+        kcalSpan.textContent = FOOD_DB[n].label + " " + FOOD_DB[n].serving + "g目安";
         item.appendChild(nameSpan);
         item.appendChild(kcalSpan);
         item.addEventListener("mousedown", function (e) {
           e.preventDefault();
           nameInput.value = n;
           row.dataset.manualKcal = "false";
+          gramsInput.value = FOOD_DB[n].serving;
           renderSuggestions();
           recalc();
           gramsInput.focus();
+          gramsInput.select();
         });
         suggestList.appendChild(item);
       });

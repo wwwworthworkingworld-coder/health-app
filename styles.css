@@ -178,6 +178,7 @@ main {
   padding: 9px 12px;
   font-size: 13.5px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   border-bottom: 1px solid #f0f2f1;
@@ -185,7 +186,15 @@ main {
 .suggest-item:last-child { border-bottom: none; }
 .suggest-item:active { background: #f0f2f1; }
 
-.suggest-kcal { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.suggest-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggest-kcal { color: var(--text-muted); font-size: 11.5px; white-space: nowrap; flex-shrink: 0; }
 
 .food-hint {
   font-size: 11px;
