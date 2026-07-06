@@ -194,6 +194,7 @@
     "tab-record": "今日の記録",
     "tab-history": "履歴",
     "tab-graph": "グラフ",
+    "tab-advice": "アドバイス",
     "tab-settings": "設定"
   };
 
@@ -205,6 +206,7 @@
       pageTitle.textContent = titles[target];
       if (target === "tab-history") renderHistory();
       if (target === "tab-graph") renderChart();
+      if (target === "tab-advice") renderAdvice();
       if (target === "tab-settings") {
         var g = loadGoal();
         document.getElementById("targetWeightInput").value = g.targetWeight != null ? g.targetWeight : "";
@@ -510,6 +512,149 @@
   }
   function sumExerciseCalories(exercises) {
     return (exercises || []).reduce(function (sum, ex) { return sum + (Number(ex.calories) || 0); }, 0);
+  }
+
+  // ---------- advice ----------
+  function average(arr) {
+    return arr.length ? arr.reduce(function (a, b) { return a + b; }, 0) / arr.length : null;
+  }
+
+  function dateNDaysAgo(n) {
+    var d = new Date();
+    d.setDate(d.getDate() - n);
+    return formatDate(d);
+  }
+
+  function computeWindowStats(dates) {
+    var weights = [], calIn = [], calOut = [], sleep = [], cond = [];
+    var loggedDays = 0;
+    dates.forEach(function (d) {
+      var e = data[d];
+      if (!e) return;
+      loggedDays++;
+      if (e.weight != null) weights.push(Number(e.weight));
+      var ci = sumCalories(e.meals);
+      if (ci > 0) calIn.push(ci);
+      calOut.push(sumExerciseCalories(e.exercises));
+      if (e.sleepHours != null) sleep.push(Number(e.sleepHours));
+      if (e.condition != null) cond.push(Number(e.condition));
+    });
+    return {
+      loggedDays: loggedDays,
+      weight: average(weights),
+      calIn: average(calIn),
+      calOut: average(calOut),
+      sleep: average(sleep),
+      condition: average(cond)
+    };
+  }
+
+  function trendArrow(diff, threshold) {
+    if (diff == null) return "";
+    if (diff > threshold) return " ↑";
+    if (diff < -threshold) return " ↓";
+    return " →";
+  }
+
+  function buildAdvice(recent, prev, goal) {
+    var advice = [];
+    if (recent.loggedDays === 0) {
+      advice.push("直近7日間の記録がありません。まずは今日の記録をつけてみましょう。");
+      return advice;
+    }
+
+    if (recent.weight != null) {
+      var diff = prev.weight != null ? recent.weight - prev.weight : null;
+      if (goal && goal.targetWeight != null) {
+        var toGoal = recent.weight - Number(goal.targetWeight);
+        if (Math.abs(toGoal) < 0.3) {
+          advice.push("体重は目標の" + goal.targetWeight + "kgにほぼ到達しています。この調子を維持しましょう。");
+        } else if (toGoal > 0) {
+          if (diff != null && diff < -0.05) {
+            var weeks = Math.abs(diff) > 0.01 ? Math.ceil(toGoal / Math.abs(diff)) : null;
+            advice.push("体重は先週から" + diff.toFixed(1) + "kg減少し、目標に向けて順調です。" + (weeks ? "このペースが続けば目標まであと約" + weeks + "週間の見込みです。" : ""));
+          } else if (diff != null && diff > 0.05) {
+            advice.push("体重が先週から+" + diff.toFixed(1) + "kg増加しています。目標(" + goal.targetWeight + "kg)まであと" + toGoal.toFixed(1) + "kgです。食事量や間食を見直してみましょう。");
+          } else {
+            advice.push("体重はほぼ横ばいです。目標(" + goal.targetWeight + "kg)まであと" + toGoal.toFixed(1) + "kgです。");
+          }
+        } else {
+          advice.push("体重はすでに目標(" + goal.targetWeight + "kg)を下回っています。健康的な範囲を保てているか確認しましょう。");
+        }
+      } else if (diff != null && Math.abs(diff) >= 0.3) {
+        advice.push("体重が先週から" + (diff > 0 ? "+" : "") + diff.toFixed(1) + "kg" + (diff > 0 ? "増加" : "減少") + "しています。");
+      }
+    } else {
+      advice.push("体重の記録がありません。継続して記録すると変化が把握しやすくなります。");
+    }
+
+    if (recent.calIn != null && recent.weight != null) {
+      var maintenanceGuess = Math.round(recent.weight * 30);
+      if (recent.calIn > maintenanceGuess + 200) {
+        advice.push("直近の平均摂取カロリーは" + Math.round(recent.calIn) + "kcalで、目安（体重×30kcal ≈ " + maintenanceGuess + "kcal）よりやや多めです。主食や間食の量を見直すと良いかもしれません。");
+      } else if (recent.calIn < maintenanceGuess - 300) {
+        advice.push("直近の平均摂取カロリーは" + Math.round(recent.calIn) + "kcalで、目安よりかなり少なめです。極端な食事制限になっていないか確認しましょう。");
+      }
+    }
+
+    if (recent.calOut != null && recent.calOut < 50 && recent.loggedDays >= 3) {
+      advice.push("運動による消費カロリーの記録が少なめです。軽いウォーキングなど、無理のない範囲で体を動かす習慣を取り入れてみましょう。");
+    }
+
+    if (recent.sleep != null) {
+      if (recent.sleep < 6) {
+        advice.push("睡眠時間が平均" + recent.sleep.toFixed(1) + "時間とやや少なめです。可能であれば7時間以上を目指しましょう。");
+      } else if (recent.sleep >= 7) {
+        advice.push("睡眠時間は平均" + recent.sleep.toFixed(1) + "時間としっかり確保できています。");
+      }
+    }
+
+    if (recent.condition != null) {
+      if (recent.condition <= 2.5) {
+        advice.push("体調が優れない日が多いようです（平均スコア" + recent.condition.toFixed(1) + "/5）。無理をせず休息を優先し、不調が続く場合は医療機関への相談も検討してください。");
+      } else if (recent.condition >= 4) {
+        advice.push("体調は良好な日が多いようです。この調子を維持しましょう。");
+      }
+    }
+
+    if (advice.length === 0) {
+      advice.push("記録の範囲では特に大きな変化は見られません。引き続き記録を続けましょう。");
+    }
+    return advice;
+  }
+
+  function statusBlock(label, value) {
+    return '<div class="status-block"><div class="status-label">' + label + '</div><div class="status-value">' + value + '</div></div>';
+  }
+
+  function renderAdvice() {
+    var recentDates = [];
+    for (var i = 6; i >= 0; i--) recentDates.push(dateNDaysAgo(i));
+    var prevDates = [];
+    for (var j = 13; j >= 7; j--) prevDates.push(dateNDaysAgo(j));
+
+    var recent = computeWindowStats(recentDates);
+    var prev = computeWindowStats(prevDates);
+    var goal = loadGoal();
+
+    var statusGrid = document.getElementById("statusGrid");
+    var statusEmpty = document.getElementById("statusEmpty");
+    if (recent.loggedDays === 0) {
+      statusGrid.innerHTML = "";
+      statusEmpty.style.display = "block";
+    } else {
+      statusEmpty.style.display = "none";
+      statusGrid.innerHTML =
+        statusBlock("体重", recent.weight != null ? recent.weight.toFixed(1) + "kg" + trendArrow(prev.weight != null ? recent.weight - prev.weight : null, 0.2) : "-") +
+        statusBlock("摂取カロリー", recent.calIn != null ? Math.round(recent.calIn) + "kcal" : "-") +
+        statusBlock("消費カロリー", recent.calOut != null ? Math.round(recent.calOut) + "kcal" : "-") +
+        statusBlock("睡眠時間", recent.sleep != null ? recent.sleep.toFixed(1) + "h" : "-") +
+        statusBlock("体調", recent.condition != null ? recent.condition.toFixed(1) + "/5" : "-");
+    }
+
+    var adviceList = document.getElementById("adviceList");
+    var advice = buildAdvice(recent, prev, goal);
+    adviceList.innerHTML = advice.map(function (a) { return "<li>" + a + "</li>"; }).join("");
   }
 
   function renderHistory() {

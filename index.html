@@ -155,6 +155,20 @@
       </div>
     </section>
 
+    <!-- ============ アドバイスタブ ============ -->
+    <section id="tab-advice" class="tab">
+      <div class="card">
+        <h2 class="card-title">直近7日間の状態</h2>
+        <div id="statusGrid" class="status-grid"></div>
+        <p id="statusEmpty" class="empty-msg" style="display:none;">直近7日間の記録がありません</p>
+      </div>
+      <div class="card">
+        <h2 class="card-title">アドバイス</h2>
+        <ul id="adviceList" class="advice-list"></ul>
+      </div>
+      <p class="hint">※この内容は記録データに基づく一般的な目安であり、医学的な診断・指導ではありません。体調に不安がある場合は医療機関にご相談ください。</p>
+    </section>
+
     <!-- ============ 設定タブ ============ -->
     <section id="tab-settings" class="tab">
       <div class="card">
@@ -193,6 +207,9 @@
     </button>
     <button type="button" class="nav-btn" data-tab="tab-graph">
       <span class="nav-icon">📈</span><span>グラフ</span>
+    </button>
+    <button type="button" class="nav-btn" data-tab="tab-advice">
+      <span class="nav-icon">💡</span><span>アドバイス</span>
     </button>
     <button type="button" class="nav-btn" data-tab="tab-settings">
       <span class="nav-icon">⚙️</span><span>設定</span>
