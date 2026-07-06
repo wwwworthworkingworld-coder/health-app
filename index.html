@@ -112,6 +112,19 @@
       </div>
 
       <div class="card">
+        <h2 class="card-title">歩数</h2>
+        <div class="step-display"><span id="stepCountDisplay">0</span><span class="step-unit">歩</span></div>
+        <div class="step-controls">
+          <button type="button" id="stepStartBtn" class="btn-small">計測開始</button>
+          <button type="button" id="stepStopBtn" class="btn-small" disabled>計測停止</button>
+          <button type="button" id="stepResetBtn" class="btn-small">リセット</button>
+        </div>
+        <p id="stepStatus" class="hint"></p>
+        <label class="field-label" style="margin-top:10px;">歩数（手動で修正・入力も可能）</label>
+        <input type="number" inputmode="numeric" id="stepsInput" class="input" placeholder="例: 8000">
+      </div>
+
+      <div class="card">
         <h2 class="card-title">メモ</h2>
         <textarea id="memoInput" class="input textarea" placeholder="今日の気づきなど"></textarea>
       </div>
@@ -139,6 +152,7 @@
           <option value="caloriesOut">消費カロリー (kcal)</option>
           <option value="sleepHours">睡眠時間 (h)</option>
           <option value="condition">体調 (1-5)</option>
+          <option value="steps">歩数 (歩)</option>
         </select>
         <label class="field-label" style="margin-top:10px;">期間</label>
         <select id="rangeSelect" class="input">

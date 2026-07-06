@@ -233,6 +233,33 @@ main {
   font-weight: 600;
 }
 
+.step-display {
+  text-align: center;
+  padding: 6px 0 12px;
+}
+.step-display #stepCountDisplay {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+.step-display .step-unit {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.step-controls {
+  display: flex;
+  gap: 8px;
+}
+.step-controls .btn-small {
+  flex: 1;
+  text-align: center;
+}
+.step-controls .btn-small:disabled {
+  opacity: 0.5;
+}
+
 .btn-primary {
   width: 100%;
   padding: 14px;

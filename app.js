@@ -222,6 +222,7 @@
   var bodyFatInput = document.getElementById("bodyFatInput");
   var sleepHoursInput = document.getElementById("sleepHoursInput");
   var sleepQualityInput = document.getElementById("sleepQualityInput");
+  var stepsInput = document.getElementById("stepsInput");
   var memoInput = document.getElementById("memoInput");
   var MEAL_TYPES = ["breakfast", "lunch", "dinner"];
   var mealListEls = {
@@ -409,7 +410,98 @@
     exerciseList.innerHTML = "";
     selectedCondition = null;
     Array.from(conditionPicker.children).forEach(function (b) { b.classList.remove("selected"); });
+    stopStepMeasurement();
+    stepCount = 0;
+    stepsInput.value = "";
+    updateStepDisplay();
   }
+
+  // ---------- step counter ----------
+  var stepCount = 0;
+  var isMeasuringSteps = false;
+  var stepGravityEstimate = 9.8;
+  var stepLastTs = 0;
+  var stepWasAbove = false;
+  var STEP_THRESHOLD = 1.2;
+  var STEP_MIN_INTERVAL = 300;
+
+  var stepStartBtn = document.getElementById("stepStartBtn");
+  var stepStopBtn = document.getElementById("stepStopBtn");
+  var stepResetBtn = document.getElementById("stepResetBtn");
+  var stepStatus = document.getElementById("stepStatus");
+  var stepCountDisplay = document.getElementById("stepCountDisplay");
+
+  function updateStepDisplay() {
+    stepCountDisplay.textContent = stepCount;
+  }
+
+  function handleDeviceMotion(e) {
+    var acc = e.accelerationIncludingGravity;
+    if (!acc || acc.x == null) return;
+    var mag = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+    stepGravityEstimate = stepGravityEstimate * 0.9 + mag * 0.1;
+    var delta = mag - stepGravityEstimate;
+    var now = Date.now();
+    if (delta > STEP_THRESHOLD && !stepWasAbove && (now - stepLastTs) > STEP_MIN_INTERVAL) {
+      stepCount++;
+      stepLastTs = now;
+      stepWasAbove = true;
+      stepsInput.value = stepCount;
+      updateStepDisplay();
+    } else if (delta < STEP_THRESHOLD * 0.5) {
+      stepWasAbove = false;
+    }
+  }
+
+  function startStepMeasurement() {
+    if (typeof DeviceMotionEvent === "undefined") {
+      stepStatus.textContent = "この端末・ブラウザではモーションセンサーが使えません。歩数は手動で入力してください。";
+      return;
+    }
+    function begin() {
+      isMeasuringSteps = true;
+      stepGravityEstimate = 9.8;
+      stepWasAbove = false;
+      window.addEventListener("devicemotion", handleDeviceMotion);
+      stepStartBtn.disabled = true;
+      stepStopBtn.disabled = false;
+      stepStatus.textContent = "計測中…スマホを持ったまま歩いてください（アプリを開いている間のみ有効です）";
+    }
+    if (typeof DeviceMotionEvent.requestPermission === "function") {
+      DeviceMotionEvent.requestPermission().then(function (result) {
+        if (result === "granted") {
+          begin();
+        } else {
+          stepStatus.textContent = "モーションセンサーの利用が許可されませんでした。設定を確認するか、歩数を手動で入力してください。";
+        }
+      }).catch(function () {
+        stepStatus.textContent = "モーションセンサーの許可を取得できませんでした。歩数は手動で入力してください。";
+      });
+    } else {
+      begin();
+    }
+  }
+
+  function stopStepMeasurement() {
+    if (!isMeasuringSteps) return;
+    window.removeEventListener("devicemotion", handleDeviceMotion);
+    isMeasuringSteps = false;
+    stepStartBtn.disabled = false;
+    stepStopBtn.disabled = true;
+    stepStatus.textContent = "計測を停止しました";
+  }
+
+  stepStartBtn.addEventListener("click", startStepMeasurement);
+  stepStopBtn.addEventListener("click", stopStepMeasurement);
+  stepResetBtn.addEventListener("click", function () {
+    stepCount = 0;
+    stepsInput.value = "";
+    updateStepDisplay();
+  });
+  stepsInput.addEventListener("input", function () {
+    stepCount = stepsInput.value === "" ? 0 : Number(stepsInput.value);
+    updateStepDisplay();
+  });
 
   function normalizeMeals(meals) {
     if (Array.isArray(meals)) return { breakfast: meals, lunch: [], dinner: [] };
@@ -425,6 +517,11 @@
     bodyFatInput.value = entry.bodyFat != null ? entry.bodyFat : "";
     sleepHoursInput.value = entry.sleepHours != null ? entry.sleepHours : "";
     sleepQualityInput.value = entry.sleepQuality != null ? entry.sleepQuality : "";
+    if (entry.steps != null) {
+      stepsInput.value = entry.steps;
+      stepCount = Number(entry.steps);
+      updateStepDisplay();
+    }
     memoInput.value = entry.memo || "";
     var meals = normalizeMeals(entry.meals);
     MEAL_TYPES.forEach(function (t) {
@@ -478,6 +575,7 @@
       bodyFat: bodyFatInput.value === "" ? null : Number(bodyFatInput.value),
       sleepHours: sleepHoursInput.value === "" ? null : Number(sleepHoursInput.value),
       sleepQuality: sleepQualityInput.value === "" ? null : Number(sleepQualityInput.value),
+      steps: stepsInput.value === "" ? null : Number(stepsInput.value),
       condition: selectedCondition,
       memo: memoInput.value,
       meals: collectMeals(),
@@ -501,6 +599,7 @@
     var calOut = sumExerciseCalories(entry.exercises);
     if (calOut) parts.push("消費 " + calOut + "kcal");
     if (entry.sleepHours != null) parts.push("睡眠 " + entry.sleepHours + "h");
+    if (entry.steps != null) parts.push(entry.steps + "歩");
     return parts.join(" / ") || "記録あり";
   }
 
@@ -526,7 +625,7 @@
   }
 
   function computeWindowStats(dates) {
-    var weights = [], calIn = [], calOut = [], sleep = [], cond = [];
+    var weights = [], calIn = [], calOut = [], sleep = [], cond = [], steps = [];
     var loggedDays = 0;
     dates.forEach(function (d) {
       var e = data[d];
@@ -538,6 +637,7 @@
       calOut.push(sumExerciseCalories(e.exercises));
       if (e.sleepHours != null) sleep.push(Number(e.sleepHours));
       if (e.condition != null) cond.push(Number(e.condition));
+      if (e.steps != null) steps.push(Number(e.steps));
     });
     return {
       loggedDays: loggedDays,
@@ -545,7 +645,8 @@
       calIn: average(calIn),
       calOut: average(calOut),
       sleep: average(sleep),
-      condition: average(cond)
+      condition: average(cond),
+      steps: average(steps)
     };
   }
 
@@ -617,6 +718,14 @@
       }
     }
 
+    if (recent.steps != null) {
+      if (recent.steps < 5000) {
+        advice.push("平均歩数は" + Math.round(recent.steps) + "歩とやや少なめです。一般的な目安の8,000〜10,000歩に近づけるよう、通勤や買い物での徒歩を増やしてみましょう。");
+      } else if (recent.steps >= 8000) {
+        advice.push("平均歩数は" + Math.round(recent.steps) + "歩としっかり歩けています。この調子を維持しましょう。");
+      }
+    }
+
     if (advice.length === 0) {
       advice.push("記録の範囲では特に大きな変化は見られません。引き続き記録を続けましょう。");
     }
@@ -649,7 +758,8 @@
         statusBlock("摂取カロリー", recent.calIn != null ? Math.round(recent.calIn) + "kcal" : "-") +
         statusBlock("消費カロリー", recent.calOut != null ? Math.round(recent.calOut) + "kcal" : "-") +
         statusBlock("睡眠時間", recent.sleep != null ? recent.sleep.toFixed(1) + "h" : "-") +
-        statusBlock("体調", recent.condition != null ? recent.condition.toFixed(1) + "/5" : "-");
+        statusBlock("体調", recent.condition != null ? recent.condition.toFixed(1) + "/5" : "-") +
+        statusBlock("歩数", recent.steps != null ? Math.round(recent.steps) + "歩" : "-");
     }
 
     var adviceList = document.getElementById("adviceList");
@@ -713,7 +823,8 @@
     caloriesIn: { label: "摂取カロリー", unit: "kcal", get: function (e) { var v = sumCalories(e.meals); return v || null; } },
     caloriesOut: { label: "消費カロリー", unit: "kcal", get: function (e) { var v = sumExerciseCalories(e.exercises); return v || null; } },
     sleepHours: { label: "睡眠時間", unit: "h", get: function (e) { return e.sleepHours; } },
-    condition: { label: "体調", unit: "", get: function (e) { return e.condition; } }
+    condition: { label: "体調", unit: "", get: function (e) { return e.condition; } },
+    steps: { label: "歩数", unit: "歩", get: function (e) { return e.steps; } }
   };
 
   function renderChart() {
